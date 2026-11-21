@@ -38,7 +38,8 @@ export function matchCourse(input: string, pages: CoursePage[]): CoursePage | nu
   if (exact) return exact;
   const code = input.match(/([A-Za-z]{2,4})[\s-]?(\d{3,4})/);
   if (code) {
-    const byCode = pages.find((p) => p.haystack.includes(squash(code[0])));
+    const pattern = new RegExp(`${squash(code[0])}(?![0-9])`);
+    const byCode = pages.find((p) => pattern.test(p.haystack));
     if (byCode) return byCode;
   }
   return (
@@ -89,8 +90,10 @@ async function listFrom(database: Destination): Promise<TaskItem[]> {
 
 /** Tasks from both databases, soonest deadline first; items without a deadline come last. */
 export async function listTasks(): Promise<TaskItem[]> {
-  const [assignments, tasks] = await Promise.all([listFrom("assignments"), listFrom("tasks")]);
-  return [...assignments, ...tasks].sort((a, b) => {
+  const results = await Promise.allSettled([listFrom("assignments"), listFrom("tasks")]);
+  const failed = results.filter((r) => r.status === "rejected");
+  if (failed.length === results.length) throw failed[0].reason;
+  return results.flatMap((r) => (r.status === "fulfilled" ? r.value : [])).sort((a, b) => {
     if (!a.dueDate || !b.dueDate) return a.dueDate ? -1 : b.dueDate ? 1 : 0;
     return a.dueDate.slice(0, 10).localeCompare(b.dueDate.slice(0, 10)) || a.dueDate.localeCompare(b.dueDate);
   });
@@ -101,7 +104,7 @@ async function findDuplicate(source: ResolvedSource, input: SaveTaskInput): Prom
   if (!title) return null;
   const response = await notionClient().dataSources.query({
     data_source_id: source.dataSourceId,
-    page_size: 10,
+    page_size: 100,
     filter: { property: title.name, title: { equals: input.title } },
   });
   const due = source.map.dueDate;
@@ -120,6 +123,7 @@ interface Draft {
   properties: Properties;
   essentials: Properties;
   children: Children;
+  fallbackChildren: Children;
   warnings: string[];
 }
 
@@ -173,7 +177,9 @@ async function buildDraft(source: ResolvedSource, input: SaveTaskInput): Promise
     if (course && target) {
       let match: CoursePage | null = null;
       try {
-        match = matchCourse(input.course, await listCoursePages(target));
+        match =
+          matchCourse(input.course, await listCoursePages(target)) ??
+          matchCourse(input.course, await listCoursePages(target, true));
       } catch {
         warnings.push("The Courses database is not shared with the integration, so the course was not linked.");
       }
@@ -204,20 +210,30 @@ async function buildDraft(source: ResolvedSource, input: SaveTaskInput): Promise
   }
 
   const paragraph = (content: string) => ({ paragraph: { rich_text: richText(content) } });
-  const children: Children = [];
-  if (input.description && !map.description) children.push(paragraph(input.description));
-  for (const note of bodyNotes) children.push(paragraph(note));
+  const footer: Children = [];
   if (input.source) {
-    children.push({ heading_3: { rich_text: richText("Original announcement") } });
-    children.push({ quote: { rich_text: richText(input.source) } });
+    footer.push({ heading_3: { rich_text: richText("Original announcement") } });
+    footer.push({ quote: { rich_text: richText(input.source) } });
   }
-  children.push({
+  footer.push({
     paragraph: {
       rich_text: [{ type: "text", text: { content: "Captured with CampusCatch" }, annotations: { italic: true, color: "gray" } }],
     },
   });
+  const children: Children = [];
+  if (input.description && !map.description) children.push(paragraph(input.description));
+  for (const note of bodyNotes) children.push(paragraph(note));
+  children.push(...footer);
 
-  return { properties, essentials, children, warnings };
+  // Used when Notion rejects a property: every reviewed detail goes in the page body instead.
+  const allNotes = new Set([`Category: ${input.category}`, ...(input.course ? [`Course: ${input.course}`] : []), ...bodyNotes]);
+  const fallbackChildren: Children = [
+    ...(input.description ? [paragraph(input.description)] : []),
+    ...[...allNotes].map(paragraph),
+    ...footer,
+  ];
+
+  return { properties, essentials, children, fallbackChildren, warnings };
 }
 
 /** Creates a real page in the chosen Notion database. Resolves only after Notion confirms the page. */
@@ -246,9 +262,9 @@ export async function createTask(input: SaveTaskInput): Promise<SaveTaskResult> 
     } catch (error) {
       if (!isValidationError(error)) throw error;
       // A property did not accept its value: keep the save alive with the title and deadline only.
-      page = await notion.pages.create({ parent, properties: draft.essentials, children: draft.children });
+      page = await notion.pages.create({ parent, properties: draft.essentials, children: draft.fallbackChildren });
       draft.warnings.push(
-        `Saved with the title and deadline only, because Notion rejected another property: ${error.message}`,
+        `Notion rejected a property, so only the title and deadline were set as properties and the other details were written in the page body: ${error.message}`,
       );
     }
     if (!isFullPage(page)) {

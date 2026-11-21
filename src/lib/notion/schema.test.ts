@@ -77,6 +77,7 @@ describe("matchCourse", () => {
 
   it("returns null rather than guessing", () => {
     expect(matchCourse("EEE 2201", pages)).toBeNull();
+    expect(matchCourse("CSE 413", pages)).toBeNull();
     expect(matchCourse("", pages)).toBeNull();
   });
 });
