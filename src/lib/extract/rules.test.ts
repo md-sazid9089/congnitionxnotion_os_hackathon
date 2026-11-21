@@ -84,6 +84,11 @@ describe("extractWithRules", () => {
     expect(task?.needsReview).toBe(true);
   });
 
+  it("does not let a deadline cue leak into the next sentence", () => {
+    const { task } = run("CSE 4137 assignment 25 November 2026 er moddhe submit. 26 November 2026 class.");
+    expect(task?.dueDate).toBe("2026-11-25");
+  });
+
   it("flags a submission window with two times", () => {
     const { task } = run("Submit the assignment tomorrow between 9 AM and 5 PM.");
     expect(task?.dueDate?.slice(0, 10)).toBe("2026-11-22");

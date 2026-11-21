@@ -51,6 +51,9 @@ const WEEKDAY_ALT = [...WEEKDAY_LOOKUP.keys()].sort((a, b) => b.length - a.lengt
 const DEADLINE_CUE =
   /(?<![a-z])(by|due|deadline|before|until|till|within|last date|no later than|moddhe|modhe|er age|vitor|bhitor)(?![a-z])|মধ্যে|আগে/;
 
+/** Sentence or clause end; a period only counts when followed by a space and not part of a.m./p.m. */
+const CLAUSE_BREAK = /[;!?\u0964\n]|(?<![ap][.]?m)[.] /;
+
 const BANGLA_DIGITS = "০১২৩৪৫৬৭৮৯";
 
 /** NFC-normalises and converts Bangla digits so one set of patterns covers both scripts. */
@@ -283,9 +286,17 @@ function findTimes(s: string, dateSpans: Span[]): TimeCandidate[] {
 }
 
 function pickDate(s: string, candidates: DateCandidate[]): DateCandidate {
+  // A cue belongs to a date only within the same clause and not across another date.
+  const others = (c: DateCandidate) => candidates.filter((o) => o !== c);
+  const before = (c: DateCandidate) => {
+    const from = Math.max(0, c.start - 30, ...others(c).filter((o) => o.end <= c.start).map((o) => o.end));
+    return DEADLINE_CUE.test(s.slice(from, c.start).split(CLAUSE_BREAK).pop() ?? "");
+  };
+  const after = (c: DateCandidate) => {
+    const to = Math.min(c.end + 20, ...others(c).filter((o) => o.start >= c.end).map((o) => o.start));
+    return DEADLINE_CUE.test(s.slice(c.end, to).split(CLAUSE_BREAK)[0]);
+  };
   // A cue just before a date ("submit by tomorrow") is stronger than one after it.
-  const before = (c: DateCandidate) => DEADLINE_CUE.test(s.slice(Math.max(0, c.start - 30), c.start));
-  const after = (c: DateCandidate) => DEADLINE_CUE.test(s.slice(c.end, c.end + 20));
   return candidates.find(before) ?? candidates.find(after) ?? candidates[0];
 }
 
