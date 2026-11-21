@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { formatDue, urgencyOf, type UrgencyLevel } from "@/lib/dates";
 import type { ApiError, TaskItem } from "@/lib/types";
-import { Card, ErrorNotice, Spinner, secondaryButton } from "./ui";
+import { Card, ErrorNotice, Notice, Spinner, secondaryButton } from "./ui";
 
 const BADGES: Record<UrgencyLevel, string> = {
   overdue: "bg-red-100 text-red-800",
@@ -54,6 +54,7 @@ export function TaskDashboard({
   tasks,
   loading,
   error,
+  warnings,
   onRefresh,
   connected,
   newId,
@@ -61,6 +62,7 @@ export function TaskDashboard({
   tasks: TaskItem[] | null;
   loading: boolean;
   error: ApiError | null;
+  warnings: string[];
   onRefresh: () => void;
   connected: boolean;
   newId: string | null;
@@ -85,6 +87,11 @@ export function TaskDashboard({
 
       <div className="mt-4 space-y-3">
         {error && <ErrorNotice error={error} />}
+        {warnings.map((warning) => (
+          <Notice key={warning} tone="warning">
+            {warning}
+          </Notice>
+        ))}
 
         {!connected && !error && (
           <p className="rounded-xl border border-dashed border-slate-300 p-6 text-center text-sm text-slate-500">

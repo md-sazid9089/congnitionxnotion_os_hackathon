@@ -38,7 +38,8 @@ export function matchCourse(input: string, pages: CoursePage[]): CoursePage | nu
   if (exact) return exact;
   const code = input.match(/([A-Za-z]{2,4})[\s-]?(\d{3,4})/);
   if (code) {
-    const pattern = new RegExp(`${squash(code[0])}(?![0-9])`);
+    // Whole code only: "CSE 413" must not match "CSE 4137".
+    const pattern = new RegExp(`(?<![a-z])${code[1].toLowerCase()}[ -]?${code[2]}(?![0-9])`);
     const byCode = pages.find((p) => pattern.test(p.haystack));
     if (byCode) return byCode;
   }
@@ -89,14 +90,21 @@ async function listFrom(database: Destination): Promise<TaskItem[]> {
 }
 
 /** Tasks from both databases, soonest deadline first; items without a deadline come last. */
-export async function listTasks(): Promise<TaskItem[]> {
+export async function listTasks(): Promise<{ tasks: TaskItem[]; warnings: string[] }> {
+  const names = ["Assignments", "Tasks"];
   const results = await Promise.allSettled([listFrom("assignments"), listFrom("tasks")]);
   const failed = results.filter((r) => r.status === "rejected");
   if (failed.length === results.length) throw failed[0].reason;
-  return results.flatMap((r) => (r.status === "fulfilled" ? r.value : [])).sort((a, b) => {
+  const warnings = results.flatMap((r, i) =>
+    r.status === "rejected"
+      ? [`${names[i]} could not be read, so this list is incomplete: ${r.reason instanceof Error ? r.reason.message : "unknown error"}`]
+      : [],
+  );
+  const tasks = results.flatMap((r) => (r.status === "fulfilled" ? r.value : [])).sort((a, b) => {
     if (!a.dueDate || !b.dueDate) return a.dueDate ? -1 : b.dueDate ? 1 : 0;
     return a.dueDate.slice(0, 10).localeCompare(b.dueDate.slice(0, 10)) || a.dueDate.localeCompare(b.dueDate);
   });
+  return { tasks, warnings };
 }
 
 async function findDuplicate(source: ResolvedSource, input: SaveTaskInput): Promise<PageObjectResponse | null> {

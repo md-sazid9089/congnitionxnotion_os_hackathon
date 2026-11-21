@@ -24,13 +24,16 @@ export function CampusCatch() {
   const [tasks, setTasks] = useState<TaskItem[] | null>(null);
   const [tasksLoading, setTasksLoading] = useState(false);
   const [tasksError, setTasksError] = useState<ApiError | null>(null);
+  const [taskWarnings, setTaskWarnings] = useState<string[]>([]);
   const reviewRef = useRef<HTMLDivElement>(null);
 
   const loadTasks = useCallback(async () => {
     setTasksLoading(true);
     setTasksError(null);
     try {
-      setTasks((await api<{ tasks: TaskItem[] }>("/api/tasks")).tasks);
+      const data = await api<{ tasks: TaskItem[]; warnings: string[] }>("/api/tasks");
+      setTasks(data.tasks);
+      setTaskWarnings(data.warnings ?? []);
     } catch (error) {
       setTasksError(toApiError(error));
     } finally {
@@ -169,6 +172,7 @@ export function CampusCatch() {
           tasks={tasks}
           loading={tasksLoading}
           error={tasksError}
+          warnings={taskWarnings}
           onRefresh={loadTasks}
           connected={Boolean(status?.connected && (status.databases.assignments.ok || status.databases.tasks.ok))}
           newId={saved?.item.id ?? null}

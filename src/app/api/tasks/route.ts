@@ -4,7 +4,7 @@ import { validateSaveInput } from "@/lib/validation";
 
 export async function GET() {
   try {
-    return ok({ tasks: await listTasks() });
+    return ok(await listTasks());
   } catch (error) {
     return fail(error);
   }

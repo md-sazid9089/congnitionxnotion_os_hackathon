@@ -61,8 +61,8 @@ describe("mapProperties", () => {
 
 describe("matchCourse", () => {
   const pages = [
-    { id: "1", title: "Soft Computing", haystack: "softcomputingcse4137" },
-    { id: "2", title: "CSE 4101 - Compiler Design", haystack: "cse4101compilerdesign" },
+    { id: "1", title: "Soft Computing", haystack: "soft computing | cse 4137 | 2026" },
+    { id: "2", title: "CSE 4101 - Compiler Design", haystack: "cse-4101 - compiler design | fall" },
   ];
 
   it("matches by course code stored in any text property", () => {

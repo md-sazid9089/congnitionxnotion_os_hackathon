@@ -101,7 +101,7 @@ export function toTaskItem(
 export interface CoursePage {
   id: string;
   title: string;
-  /** Title plus every text property, lower-cased with punctuation removed, for matching course codes. */
+  /** Title plus every text property, lower-cased and joined with " | ", for matching course codes. */
   haystack: string;
 }
 
@@ -124,7 +124,7 @@ export async function listCoursePages(dataSourceId: string, fresh = false): Prom
     .map((page) => ({
       id: page.id.replace(/-/g, ""),
       title: pageTitle(page),
-      haystack: squash(Object.values(page.properties).map(plainText).join(" ")),
+      haystack: Object.values(page.properties).map(plainText).join(" | ").toLowerCase(),
     }));
   courseCache.set(dataSourceId, { at: Date.now(), pages });
   return pages;
