@@ -142,7 +142,7 @@ export function CampusCatch() {
         <ConnectionPanel status={status} />
       </div>
 
-      <main className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)]">
+      <main className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)]">
         <div className="space-y-6">
           <CapturePanel text={text} onChange={setText} onExtract={extract} busy={extracting} />
           {extractError && <ErrorNotice error={extractError} />}
