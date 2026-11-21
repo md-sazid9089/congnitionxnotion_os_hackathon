@@ -99,6 +99,12 @@ describe("extractWithRules", () => {
     expect(task?.dueDate).toBe("2026-11-25");
   });
 
+  it("handles Windows line endings around a deadline label", () => {
+    const crlf = String.fromCharCode(13, 10);
+    const { task } = run("CSE 4137 assignment, notice dated 20 November 2026." + crlf + "Due:" + crlf + "25 November 2026");
+    expect(task?.dueDate).toBe("2026-11-25");
+  });
+
   it("flags a submission window with two times", () => {
     const { task } = run("Submit the assignment tomorrow between 9 AM and 5 PM.");
     expect(task?.dueDate?.slice(0, 10)).toBe("2026-11-22");

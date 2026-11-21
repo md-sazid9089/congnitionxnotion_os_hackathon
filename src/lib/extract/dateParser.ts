@@ -56,10 +56,11 @@ const CLAUSE_BREAK = /[;!?\u0964]|(?<!:[ \t]*)\n|(?<![ap][.]?m)[.]\s/;
 
 const BANGLA_DIGITS = "০১২৩৪৫৬৭৮৯";
 
-/** NFC-normalises and converts Bangla digits so one set of patterns covers both scripts. */
+/** NFC-normalises, unifies line endings and converts Bangla digits so one set of patterns covers both scripts. */
 export function normalizeText(text: string): string {
   return text
     .normalize("NFC")
+    .replace(/\r\n?/g, "\n")
     .replace(/[০-৯]/g, (digit) => String(BANGLA_DIGITS.indexOf(digit)));
 }
 
