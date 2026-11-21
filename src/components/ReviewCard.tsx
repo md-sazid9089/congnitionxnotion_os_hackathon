@@ -181,7 +181,7 @@ export function ReviewCard({
           </Notice>
         )}
         {!canSave && !saved && (
-          <Notice tone="warning">Connect Notion to save. You can still review and edit the task.</Notice>
+          <Notice tone="warning">This Notion database is not connected yet, so saving is off. You can still review and edit the task.</Notice>
         )}
         <div className="flex flex-wrap gap-2">
           {saved ? (

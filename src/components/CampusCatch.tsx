@@ -170,7 +170,7 @@ export function CampusCatch() {
           loading={tasksLoading}
           error={tasksError}
           onRefresh={loadTasks}
-          connected={Boolean(status?.connected)}
+          connected={Boolean(status?.connected && (status.databases.assignments.ok || status.databases.tasks.ok))}
           newId={saved?.item.id ?? null}
         />
       </main>

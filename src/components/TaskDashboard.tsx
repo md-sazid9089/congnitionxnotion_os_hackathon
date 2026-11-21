@@ -88,7 +88,7 @@ export function TaskDashboard({
 
         {!connected && !error && (
           <p className="rounded-xl border border-dashed border-slate-300 p-6 text-center text-sm text-slate-500">
-            Connect Notion to see your tasks here.
+            Connect Notion and share your Assignments or Tasks database to see your tasks here.
           </p>
         )}
 
