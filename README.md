@@ -32,7 +32,12 @@ Student OS already has Assignments, Tasks and Courses databases. CampusCatch is 
 
 ## How Devin was used
 
-The app was built in a Devin session from the hackathon brief: scaffolding the Next.js project, writing the date parser and extraction rules with tests, building the Notion layer against the installed SDK's types, building the UI, and checking it in a browser.
+The whole app was built through Devin Chat from the hackathon brief, in one session:
+
+- **Build**: Devin scaffolded the Next.js project, wrote the date parser and extraction rules with unit tests, built the Notion layer against the installed SDK's types, and built the UI.
+- **Notion setup**: given an integration token and a shared page, Devin found that the workshop page had no databases, created Courses, Assignments and Tasks under it, and kept the script as `npm run notion:setup`.
+- **Verification**: Devin saved real tasks to the Notion workspace through the app, read them back, and checked course linking, duplicate detection and the missing-deadline case.
+- **Review**: Devin Review ran on each push of the pull request, and Devin fixed the bugs it reported, each with a test.
 
 ## Technology
 
@@ -53,6 +58,8 @@ npm install
 cp .env.example .env.local   # then fill in NOTION_TOKEN
 npm run dev                  # http://localhost:3000
 ```
+
+On Windows (Command Prompt or PowerShell) use `copy .env.example .env.local` instead of `cp`.
 
 ### Connect Notion
 
