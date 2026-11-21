@@ -51,8 +51,8 @@ const WEEKDAY_ALT = [...WEEKDAY_LOOKUP.keys()].sort((a, b) => b.length - a.lengt
 const DEADLINE_CUE =
   /(?<![a-z])(by|due|deadline|before|until|till|within|last date|no later than|moddhe|modhe|er age|vitor|bhitor)(?![a-z])|মধ্যে|আগে/;
 
-/** Sentence or clause end; a period only counts when followed by a space and not part of a.m./p.m. */
-const CLAUSE_BREAK = /[;!?\u0964\n]|(?<![ap][.]?m)[.] /;
+/** Sentence end. A line break alone is not one ("Due:" may sit on the line above its date); a period needs whitespace after it and must not be part of a.m./p.m. */
+const CLAUSE_BREAK = /[;!?\u0964]|(?<![ap][.]?m)[.]\s/;
 
 const BANGLA_DIGITS = "০১২৩৪৫৬৭৮৯";
 
