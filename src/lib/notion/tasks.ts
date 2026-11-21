@@ -39,7 +39,7 @@ export function matchCourse(input: string, pages: CoursePage[]): CoursePage | nu
   const code = input.match(/([A-Za-z]{2,4})[\s-]?(\d{3,4})/);
   if (code) {
     // Whole code only: "CSE 413" must not match "CSE 4137".
-    const pattern = new RegExp(`(?<![a-z])${code[1].toLowerCase()}[ -]?${code[2]}(?![0-9])`);
+    const pattern = new RegExp(`(?<![a-z])${code[1].toLowerCase()}[^a-z0-9|]{0,3}${code[2]}(?![0-9])`);
     const byCode = pages.find((p) => pattern.test(p.haystack));
     if (byCode) return byCode;
   }
