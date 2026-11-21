@@ -2,8 +2,6 @@ import { fail, ok, readJson } from "@/lib/errors";
 import { createTask, listTasks } from "@/lib/notion/tasks";
 import { validateSaveInput } from "@/lib/validation";
 
-export const dynamic = "force-dynamic";
-
 export async function GET() {
   try {
     return ok({ tasks: await listTasks() });
