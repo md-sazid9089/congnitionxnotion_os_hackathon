@@ -61,6 +61,14 @@ npm run dev                  # http://localhost:3000
 3. Open your Student OS page, then `•••` → **Connections** → add the integration. Sharing the parent page shares its databases.
 4. Restart `npm run dev`. The header shows which databases were found and which properties were matched.
 
+No databases yet? The workshop page itself has none. Create Courses, Assignments and Tasks under any shared page with:
+
+```bash
+npm run notion:setup -- <URL of a page shared with the integration>
+```
+
+It adds a "CampusCatch Student OS" sub-page with the three databases and prints the IDs to put in `.env.local`.
+
 ### Environment variables
 
 | Variable | Required | Purpose |

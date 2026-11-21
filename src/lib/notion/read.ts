@@ -115,9 +115,9 @@ export function clearCourseCache(): void {
 }
 
 /** Pages of a courses data source (first 100), used to show and to link course relations. */
-export async function listCoursePages(dataSourceId: string): Promise<CoursePage[]> {
+export async function listCoursePages(dataSourceId: string, fresh = false): Promise<CoursePage[]> {
   const hit = courseCache.get(dataSourceId);
-  if (hit && Date.now() - hit.at < TTL_MS) return hit.pages;
+  if (!fresh && hit && Date.now() - hit.at < TTL_MS) return hit.pages;
   const response = await notionClient().dataSources.query({ data_source_id: dataSourceId, page_size: 100 });
   const pages = response.results
     .filter((r): r is PageObjectResponse => r.object === "page" && isFullPage(r))

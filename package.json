@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint",
     "test": "vitest run",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "notion:setup": "node scripts/setup-notion.mjs"
   },
   "dependencies": {
     "@notionhq/client": "^5.31.1",
