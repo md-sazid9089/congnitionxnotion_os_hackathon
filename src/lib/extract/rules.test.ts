@@ -94,6 +94,11 @@ describe("extractWithRules", () => {
     expect(task?.dueDate).toBe("2026-11-25");
   });
 
+  it("keeps a trailing deadline cue on its own line", () => {
+    const { task } = run("CSE 4137 Assignment: 25 November 2026 deadline" + String.fromCharCode(10) + "Class: 26 November 2026");
+    expect(task?.dueDate).toBe("2026-11-25");
+  });
+
   it("flags a submission window with two times", () => {
     const { task } = run("Submit the assignment tomorrow between 9 AM and 5 PM.");
     expect(task?.dueDate?.slice(0, 10)).toBe("2026-11-22");
