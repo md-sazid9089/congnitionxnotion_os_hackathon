@@ -283,12 +283,10 @@ function findTimes(s: string, dateSpans: Span[]): TimeCandidate[] {
 }
 
 function pickDate(s: string, candidates: DateCandidate[]): DateCandidate {
-  const cued = candidates.find((candidate) => {
-    const before = s.slice(Math.max(0, candidate.start - 30), candidate.start);
-    const after = s.slice(candidate.end, candidate.end + 20);
-    return DEADLINE_CUE.test(before) || DEADLINE_CUE.test(after);
-  });
-  return cued ?? candidates[0];
+  // A cue just before a date ("submit by tomorrow") is stronger than one after it.
+  const before = (c: DateCandidate) => DEADLINE_CUE.test(s.slice(Math.max(0, c.start - 30), c.start));
+  const after = (c: DateCandidate) => DEADLINE_CUE.test(s.slice(c.end, c.end + 20));
+  return candidates.find(before) ?? candidates.find(after) ?? candidates[0];
 }
 
 export function parseDeadline(normalizedText: string, now: Date = new Date()): ParsedDeadline {
@@ -299,7 +297,7 @@ export function parseDeadline(normalizedText: string, now: Date = new Date()): P
 
   const absolute = findAbsoluteDates(s, today);
   const relative = findRelativeDates(s, today, absolute);
-  const pool = absolute.length > 0 ? absolute : relative;
+  const pool = [...absolute, ...relative];
   const dateSpans: Span[] = [...absolute, ...relative];
 
   let date: YMD | null = null;
@@ -320,6 +318,11 @@ export function parseDeadline(normalizedText: string, now: Date = new Date()): P
   const times = findTimes(s, dateSpans);
   const timed = times.find((candidate) => candidate.time) ?? null;
   let time: HM | null = timed?.time ?? null;
+  const distinctTimes = new Set(times.filter((c) => c.time).map((c) => `${c.time!.h}:${c.time!.min}`));
+  if (distinctTimes.size > 1) {
+    notes.push("Several times were found. Check that the right one was used.");
+    uncertain = true;
+  }
   for (const candidate of timed ? [timed] : times) {
     if (candidate.note) {
       notes.push(candidate.note);

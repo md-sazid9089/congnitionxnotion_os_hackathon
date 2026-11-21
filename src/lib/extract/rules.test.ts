@@ -78,6 +78,18 @@ describe("extractWithRules", () => {
     expect(result.reason).toMatch(/No actionable item/);
   });
 
+  it("prefers a relative deadline over an absolute issue date and flags it", () => {
+    const { task } = run("Assignment issued November 20, 2026; submit by tomorrow.");
+    expect(task?.dueDate).toBe("2026-11-22");
+    expect(task?.needsReview).toBe(true);
+  });
+
+  it("flags a submission window with two times", () => {
+    const { task } = run("Submit the assignment tomorrow between 9 AM and 5 PM.");
+    expect(task?.dueDate?.slice(0, 10)).toBe("2026-11-22");
+    expect(task?.needsReview).toBe(true);
+  });
+
   it("resolves relative English dates against today in Dhaka", () => {
     expect(run("CSE 4101 quiz tomorrow at 10 am").task?.dueDate).toBe("2026-11-22T10:00:00+06:00");
     expect(run("Submit the EEE 2203 lab report by Friday").task).toMatchObject({
