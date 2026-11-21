@@ -16,7 +16,7 @@ CampusCatch helps university students turn scattered academic announcements and 
 
 **Category:** Student Productivity &nbsp;|&nbsp; **Hackathon:** Cognition × Notion Student OS Hackathon
 
-[Problem](#the-problem) · [Solution](#our-solution) · [Demo](#product-demonstration) · [Notion integration](#notion-student-os-integration) · [Getting started](#getting-started) · [How we used Devin](#how-we-used-devin-chat)
+[Problem](#the-problem) · [Solution](#our-solution) · [Demo](#live-demonstration) · [Notion integration](#notion-student-os-integration) · [Setup](#installation-and-setup) · [Testing](#testing-and-verification) · [How Devin was used](#how-devin-chat-was-used)
 
 </div>
 
@@ -31,7 +31,7 @@ CampusCatch helps university students turn scattered academic announcements and 
 | **What it does** | You paste an announcement. CampusCatch extracts the task, lets you correct it, and creates a real page in your Notion Student OS. |
 | **Why students need it** | Deadlines arrive as chat messages and emails, then get buried. Copying each one into Notion by hand is the step that gets skipped. |
 | **How Notion is used** | Tasks are written to and read from your own Assignments, Tasks and Courses databases through the official Notion API. There is no other database. |
-| **How to try it** | `npm install`, add a Notion token to `.env.local`, `npm run dev`. See [Getting started](#getting-started). |
+| **How to try it** | `npm install`, add a Notion token to `.env.local`, `npm run dev`. See [Installation and Setup](#installation-and-setup). |
 
 ## The Problem
 
@@ -46,6 +46,10 @@ Students who already keep a Notion Student OS have a good place to track work. W
 ## Our Solution
 
 CampusCatch is a capture layer in front of the Notion Student OS. It does not replace the workspace or keep its own task list: every task it saves is a Notion page, and everything it shows is read back from Notion.
+
+The student stays in control. Extraction only proposes a task, and the student confirms or corrects it before anything is saved.
+
+## How It Works
 
 ```mermaid
 flowchart LR
@@ -79,14 +83,15 @@ Everything in this table is implemented. The "Verified" column says how each ite
 | Duplicate detection | Warns when the same title and deadline already exist, with a link to the existing page | Browser test |
 | Upcoming dashboard | Live list from Notion with Overdue, Due today, Tomorrow and "In N days" labels | Browser test |
 | Unrelated messages | Small talk is reported as "no task found" instead of becoming a task | Unit tests, browser test |
-| Error handling | Clear messages for empty input, malformed requests, invalid fields, and a missing or rejected Notion token. A failed save never shows a success message | API tests on a fresh clone |
+| Error handling | Clear messages for empty input, malformed requests, invalid fields, and a missing or rejected Notion token. A failed save never shows a success message | API tests on a fresh clone, browser test |
+| Responsive layout | Works on desktop and at a 390 px mobile width without horizontal scrolling | Browser test |
 | Schema detection | Reads each database's real properties instead of assuming names, with optional overrides | Unit tests |
 
 **Implemented but not verified with a live model:** an optional extraction path that calls an OpenAI-compatible API when `LLM_API_KEY` is set. It is off by default and falls back to the rule-based parser on any failure. Everything described in this README uses the rule-based parser.
 
-Planned work is listed separately under [Future Roadmap](#future-roadmap).
+Planned work is listed separately under [Future Improvements](#future-improvements).
 
-## Product Demonstration
+## Live Demonstration
 
 **Input**, pasted into the capture box:
 
@@ -219,7 +224,7 @@ The original announcement is also stored in the page body as a quote, so the sou
 
 Extraction uses plain TypeScript: regular expressions, keyword lists and a date parser. No AI service is required.
 
-## Getting Started
+## Installation and Setup
 
 ### Prerequisites
 
@@ -290,7 +295,7 @@ npm run dev
 
 Open <http://localhost:3000>. The badge at the top right shows **Notion connected** when the token and databases are working.
 
-## Testing
+## Testing and Verification
 
 ### Automated checks
 
@@ -314,19 +319,30 @@ Last full run: 21 November 2026 on a fresh clone (Windows, Node.js 24.22). All 2
 7. Press Extract and Save again with the same text. Expect a duplicate warning, not a second page.
 8. Paste `Hey everyone, how was your weekend?`. Expect "No task found".
 
-### What was verified against a real Notion workspace
+### Verified scenarios
 
-| Check | Method | Result |
+Run on 21 November 2026 in Chrome against a real Notion workspace, with screen recordings. Saved pages were then read back directly from the Notion API.
+
+| Scenario | Input | Observed result |
 | --- | --- | --- |
-| Extract, edit, save, reload | Recorded browser test | Passed |
-| Saved page read back from Notion with the right deadline and course link | Notion API read | Passed |
-| Duplicate save blocked, missing deadline left empty, unrelated message rejected | Recorded browser test | Passed |
-| Save to the Tasks database | API test | Passed |
-| Rejected or missing token returns a clear error and creates nothing | API test on a fresh clone | Passed |
+| Assignment | `CSE 4137 Soft Computing assignment submission deadline is November 25, 2026 at 11:59 PM.` | Soft Computing Assignment, CSE 4137, Assignment, 25 Nov 2026 11:59 PM, Assignments. The page already existed in Notion from an earlier save, so saving again showed the duplicate warning and no second page was created |
+| Quiz | `CSE 3201 Database Management quiz on November 26, 2026 at 10 AM.` | Database Management Quiz, Quiz, 26 Nov 2026 10:00 AM, saved to Assignments. Notion holds the deadline as `2026-11-26T10:00:00+06:00` and the description edited in the review card. No CSE 3201 course exists, so the student was told and the course code was kept in the page body |
+| General task | `Renew university library membership by November 28, 2026.` | General Task, 28 Nov 2026 with no time, saved to Tasks and read back from Notion |
+| Missing deadline | `Discuss the project presentation with teammates.` | No date invented. The card asked for confirmation, and a date, category and destination could be filled in by hand. The word "project" made the suggested category Project |
+| Irrelevant message | `Hello everyone! How are you doing today?` | No task found |
+| Empty input | Empty or spaces only | Extract button stays disabled |
+| Impossible date | `CSE 3201 assignment due February 31, 2026.` | Date left empty and flagged for review |
+| Rejected or missing Notion token | App started with a bad token, then with none | "Notion not connected", Save disabled, extraction still works, nothing created |
+| Repeated submission | Same task saved twice | Duplicate warning with a link to the existing page |
+| Reload | Browser refresh after each save | Saved tasks reappear, read from Notion |
+| Mobile width | 390 px wide | No horizontal scrolling, review card fits |
 
-These tests used the three databases created by `npm run notion:setup`. Other Student OS layouts are covered by unit tests of the schema mapping, not by live tests.
+Also checked: no critical browser console errors during the run; no credentials in the Git history; `.env.local` is ignored; the token does not appear in the page, API responses or browser bundle.
 
-## How We Used Devin Chat
+Limits of this testing: it used the three databases created by `npm run notion:setup`. Other Student OS layouts are covered by unit tests of the schema mapping, not by live tests. The optional LLM path was not tested.
+
+
+## How Devin Chat Was Used
 
 CampusCatch was built in a Devin session, working from the hackathon brief. Devin wrote the code, ran it, tested it against the real workspace and fixed what broke. The author set the priorities, created the Notion integration, granted page access, and approved and merged the pull request.
 
@@ -337,11 +353,12 @@ CampusCatch was built in a Devin session, working from the hackathon brief. Devi
 | Notion integration | Built the Notion layer on the official SDK: schema detection, page creation, course linking, duplicate checks and reading |
 | Workspace setup | Found that the shared workshop page contained no databases, then wrote and ran `scripts/setup-notion.mjs` to create Courses, Assignments and Tasks with their relations |
 | Debugging | Fixed, among others: a route setting that Next.js 16 rejects when cache components are enabled; a stale course cache that left the first saved assignment unlinked; a typecheck that failed on a fresh clone because route types had not been generated |
-| Testing | Ran the unit tests, saved and read back real tasks through the app, ran a recorded browser test of the whole flow, and re-ran install, build and startup on a fresh clone |
+| Testing | Ran the unit tests, saved and read back real tasks through the app, read the saved pages directly from the Notion API, and re-ran install, build and startup on a fresh clone |
+| Browser testing | Drove the app in Chrome through the scenarios listed under [Testing and Verification](#testing-and-verification), with screen recordings, including the error states and a 390 px mobile width. That run found a horizontal overflow on narrow screens, which Devin fixed and retested |
 | Code review | Devin Review ran on each push to the pull request. Devin fixed the bugs it reported, for example a relative deadline losing to an earlier issue date, `CSE 413` matching `CSE 4137`, and a "submit by" cue attaching to a date in the next sentence. Parser and course-matching fixes came with regression tests |
 | Documentation | Wrote this README and `.env.example`, and checked the setup commands on a fresh clone |
 
-## Innovation and Impact
+## Real-World Impact
 
 - **Less manual entry.** One paste replaces retyping a title, course, date and time into Notion.
 - **Announcements become organised.** Each message ends up as a categorised task in the right database, linked to its course.
@@ -350,7 +367,7 @@ CampusCatch was built in a Devin session, working from the hackathon brief. Devi
 - **It fits real messages.** Banglish and Bangla date words are understood, and the student always confirms before anything is saved.
 - **It is careful with dates.** A wrong deadline is worse than none, so uncertain dates are flagged and missing dates stay empty.
 
-## Limitations
+## Known Limitations
 
 - **Manual paste only.** CampusCatch cannot read WhatsApp, Messenger or email. The student copies the message in.
 - **Rule-based extraction has gaps.** It recognises a fixed set of keywords and date phrases. For example, "CSE 4137 presentation on Thursday." is currently reported as "no task found", and a message containing several category words gets one by fixed priority ("Team meeting for the project" is categorised as Project).
@@ -363,7 +380,7 @@ CampusCatch was built in a Devin session, working from the hackathon brief. Devi
 - **Single user, no sign-in.** The app uses one integration token, so it is meant to run locally. It should not be hosted publicly as is, and there is no hosted demo.
 - **Optional LLM path not verified.** The code path exists but was not tested with a live model.
 
-## Future Roadmap
+## Future Improvements
 
 These are not implemented.
 
